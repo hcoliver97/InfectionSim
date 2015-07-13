@@ -5,19 +5,20 @@
 -Natural recovery from triangle distribution
 -Base case with civilian and medic
 -Enter parameters at bottom of InfectionSim.py
--Outputs to a csv file
+-Outputs to a csv file with version name
 '''
 
 ###TO_DO###
 # -Arguments from commandline
 # -Simplify y coordinate generation
+#
 
 import random
 import csv
 from Rv import *
 
 __author__ = "Hayley Oliver"
-__version__ = '1.2'
+__version__ = '1.3'
 
 class InfectionSim(Uniform, Triangle, Exponential):
     ''' Simulation Class'''
@@ -129,7 +130,7 @@ class InfectionSim(Uniform, Triangle, Exponential):
 
     def generate_file(self, mode, *args):
         '''Generates data file with inputs'''
-        with open('InfectionSim.csv', mode) as file:
+        with open('InfectionSim'+__version__+'.csv', mode) as file:
             writer = csv.writer(file)
             data = []
             for i in args:
