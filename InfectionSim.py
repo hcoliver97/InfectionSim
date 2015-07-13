@@ -1,6 +1,7 @@
 ''' Simple Infection Simulation
 -Agent based model
 -Checker board style random movement
+-Simple infection probability
 -Base case with civilian and medic
 -Outputs to a csv file
 '''
@@ -8,20 +9,23 @@
 ###TO_DO###
 # -Infection Probability
 # -Arguments from commandline
+# -Simplify y coordinate generation
+# -Natural recovery time
 
 import random
 import csv
 
 __author__ = "Hayley Oliver"
-__version__ = '1.0'
+__version__ = '1.1'
 
 class InfectionSim():
     ''' Simulation Class'''
-    def __init__(self, end_t, num_healthy, num_infected, num_medic):
+    def __init__(self, end_t, num_healthy, num_infected, num_medic, infection_p):
         self.end_t = end_t
         self.num_healthy = num_healthy
         self.num_infected = num_infected
         self.num_medic = num_medic
+        self.infection_p = infection_p
         self.recovered_count = 0
         self.infection_count = 0
         self.agent_list = []
@@ -92,10 +96,12 @@ class InfectionSim():
             if tag in healthy_tag:
                 for agent in self.agent_list:
                     if agent.tag == tag and agent.state == False:
-                        agent.state = True
-                        self.infection_count += 1
-                        self.num_healthy -= 1
-                        self.num_infected += 1
+                        if random.random() <= self.infection_p:
+                            agent.state = True
+                            self.infection_count += 1
+                            self.num_healthy -= 1
+                            self.num_infected += 1
+
             if tag in medic_tag:
                 for agent in self.agent_list:
                     if agent.tag == tag and agent.state == True:
@@ -118,6 +124,7 @@ class InfectionSim():
         Main method. Calls method to generate agents and board.
         Adds headers to the data output file.
         At every timestep, generates random movement and checks for collision.
+        For every collision, infection occures at infection_p
         '''
         self.generate_agents()
         self.tags()
@@ -160,4 +167,4 @@ class Agent():
         self.tag = ""
         self.state = state
 
-InfectionSim(100, 20, 2, 2).run()
+InfectionSim(100, 20, 2, 2, 0.5).run()
