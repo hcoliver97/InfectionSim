@@ -1,36 +1,44 @@
 ''' Simple Infection Simulation
 -Agent based model
 -Checker board style random movement
--Simple infection probability
+-Simple infection probability from distribution
+-Natural recovery from triangle distribution
 -Base case with civilian and medic
+-Enter parameters at bottom of InfectionSim.py
 -Outputs to a csv file
 '''
 
 ###TO_DO###
-# -Infection Probability
 # -Arguments from commandline
 # -Simplify y coordinate generation
-# -Natural recovery time
 
 import random
 import csv
+from Rv import *
 
 __author__ = "Hayley Oliver"
-__version__ = '1.1'
+__version__ = '1.2'
 
-class InfectionSim():
+class InfectionSim(Uniform, Triangle, Exponential):
     ''' Simulation Class'''
-    def __init__(self, end_t, num_healthy, num_infected, num_medic, infection_p):
+    def __init__(self, end_t, num_healthy, num_infected, num_medic, infection_p, recovery_t):
+        Uniform.__init__(self)
+        Triangle.__init__(self)
+        Exponential.__init__(self)
+        # User input variables
         self.end_t = end_t
         self.num_healthy = num_healthy
         self.num_infected = num_infected
         self.num_medic = num_medic
-        self.infection_p = infection_p
+        self.infection_p = Triangle().generate(infection_p[0],infection_p[1],infection_p[2])
+        self.recovery_t = Triangle().generate(recovery_t[0],recovery_t[1],recovery_t[2])
+        # Initialization variables
         self.recovered_count = 0
         self.infection_count = 0
         self.agent_list = []
         self.board_size = 10
         self.board = []
+        self.t = 0
 
     def generate_agents(self):
         '''Generates instances of class Agent with parameters specified.'''
@@ -98,6 +106,7 @@ class InfectionSim():
                     if agent.tag == tag and agent.state == False:
                         if random.random() <= self.infection_p:
                             agent.state = True
+                            agent.infected_t = self.t
                             self.infection_count += 1
                             self.num_healthy -= 1
                             self.num_infected += 1
@@ -106,9 +115,17 @@ class InfectionSim():
                 for agent in self.agent_list:
                     if agent.tag == tag and agent.state == True:
                         agent.state = False
+                        agent.infected_t = 0
                         self.recovered_count += 1
                         self.num_healthy += 1
                         self.num_infected -= 1
+
+    def natural_recovery(self):
+        for agent in self.agent_list:
+            if agent.state == True:
+                if self.t >= agent.infected_t + self.recovery_t:
+                    agent.state = False
+                    agent.infected_t = 0
 
     def generate_file(self, mode, *args):
         '''Generates data file with inputs'''
@@ -129,27 +146,29 @@ class InfectionSim():
         self.generate_agents()
         self.tags()
         self.generate_file("w","Time","NumInfected","NumHealthy","NumMedic","NumRecovered","NumInfections")
-        for t in range(0, self.end_t + 1):
-            if t == 0:
+        for self.t in range(0, self.end_t + 1):
+            if self.t == 0:
                 for agent in self.agent_list:
                     rx = random.randint(0,9)
                     ry = random.randint(0,9)
                     agent.x = rx
                     agent.y = ry
                     agent.tag = self.board[agent.x][agent.y]
-                self.generate_file('a',t,self.num_infected,self.num_healthy,self.num_medic)
+                    self.natural_recovery()
+                self.generate_file('a',self.t,self.num_infected,self.num_healthy,self.num_medic)
                 #print "Time: ", t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy
-                t += 1
+                self.t += 1
             else:
                 for agent in self.agent_list:
                     rand = random.randint(0,8)
                     agent.x = self.x_movement(rand, agent.x)
                     agent.y = self.y_movement(rand, agent.y)
                     agent.tag = self.board[agent.x][agent.y]
+                    self.natural_recovery()
                 self.collision_check()
-                self.generate_file('a',t,self.num_infected,self.num_healthy,self.num_medic,self.recovered_count,self.infection_count)
+                self.generate_file('a',self.t,self.num_infected,self.num_healthy,self.num_medic,self.recovered_count,self.infection_count)
                 #print "Time: ", t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy, "# recovered: ", self.recovered_count, "# infections: ", self.infection_count
-                t += 1
+                self.t += 1
 
 
 class Agent():
@@ -166,5 +185,15 @@ class Agent():
         self.y = 0
         self.tag = ""
         self.state = state
+        self.infected_t = 0
 
-InfectionSim(100, 20, 2, 2, 0.5).run()
+### ENTER PARAMETERS ###
+end_t = 100
+num_healthy = 10
+num_infected = 2
+num_medic = 2
+infection_p = [0.3,0.9,0.5]
+recovery_t = [2,7,4]
+#########################
+
+InfectionSim(end_t,num_healthy,num_infected,num_medic,infection_p,recovery_t).run()
