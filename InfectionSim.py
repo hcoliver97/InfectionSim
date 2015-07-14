@@ -5,35 +5,41 @@
 -Natural recovery from triangle distribution
 -Base case with civilian and medic
 -Enter parameters at bottom of InfectionSim.py
+-Enter squad parameters
 -Outputs to a csv file with version name
 '''
 
 ###TO_DO###
+# Important:
+# -Squad confining to a section on board
+# -Code batch runner file
+# -Organize code
+#
 # -Arguments from commandline
 # -Simplify y coordinate generation
-#
+# -Come up with position tag system that can handle bigger boards
+# -Initial number infected by probability?
 
 import random
 import csv
 from Rv import *
 
 __author__ = "Hayley Oliver"
-__version__ = '1.3'
+__version__ = '1.4'
 
-class InfectionSim(Uniform, Triangle, Exponential):
+class InfectionSim(Triangle):
     ''' Simulation Class'''
-    def __init__(self, end_t, num_healthy, num_infected, num_medic, infection_p, recovery_t):
-        Uniform.__init__(self)
+    def __init__(self, end_t, num_medic, infection_p, recovery_t, *args):
         Triangle.__init__(self)
-        Exponential.__init__(self)
         # User input variables
         self.end_t = end_t
-        self.num_healthy = num_healthy
-        self.num_infected = num_infected
         self.num_medic = num_medic
         self.infection_p = Triangle().generate(infection_p[0],infection_p[1],infection_p[2])
         self.recovery_t = Triangle().generate(recovery_t[0],recovery_t[1],recovery_t[2])
+        self.squad = args
         # Initialization variables
+        self.num_healthy = 0
+        self.num_infected = 0
         self.recovered_count = 0
         self.infection_count = 0
         self.agent_list = []
@@ -43,27 +49,33 @@ class InfectionSim(Uniform, Triangle, Exponential):
 
     def generate_agents(self):
         '''Generates instances of class Agent with parameters specified.'''
-        for i in range(self.num_healthy):
-            self.agent_list.append(Agent("Civ", False))
-        for i in range(self.num_infected):
-            self.agent_list.append(Agent("Civ", True))
+        for squad in self.squad:
+            for i in range(squad[1]):
+                self.agent_list.append(Agent(squad[0],False))
+                self.num_healthy += 1
+            for i in range(squad[2]):
+                self.agent_list.append(Agent(squad[0],True))
+                self.num_infected += 1
         for i in range(self.num_medic):
             self.agent_list.append(Agent("Med", False))
+            self.num_healthy += 1
 
-    def x_movement(self, int, x):
-        ''' Generates new X coordinate based on a random integer'''
-        new_x = x + ((int % 3)-1)
+    def x_movement(self, x):
+        '''Generates new X coordinate based on a random integer'''
+        rand = random.randint(0,8)
+        new_x = x + ((rand % 3)-1)
         if new_x < 0: new_x = 0
         if new_x > 9: new_x = 9
         return new_x
 
-    def y_movement(self, int, y):
-        ''' Generates new Y coordinate based on random integer'''
-        if int <= 2 and int >= 0:
+    def y_movement(self,y):
+        '''Generates new Y coordinate based on random integer'''
+        rand = random.randint(0,8)
+        if rand <= 2 and rand >= 0:
             new_y = y + 1
-        elif int <= 5 and int >= 3:
+        elif rand <= 5 and rand >= 3:
             new_y = y
-        elif int <= 8 and int >= 6:
+        elif rand <= 8 and rand >= 6:
             new_y = y - 1
         if new_y < 0: new_y = 0
         if new_y > 9: new_y = 9
@@ -122,6 +134,10 @@ class InfectionSim(Uniform, Triangle, Exponential):
                         self.num_infected -= 1
 
     def natural_recovery(self):
+        '''
+        After a random amount of time with triangular distribution from user
+        input, infected agents will become healthy again.
+        '''
         for agent in self.agent_list:
             if agent.state == True:
                 if self.t >= agent.infected_t + self.recovery_t:
@@ -156,19 +172,20 @@ class InfectionSim(Uniform, Triangle, Exponential):
                     agent.y = ry
                     agent.tag = self.board[agent.x][agent.y]
                     self.natural_recovery()
+                    #print self.t, agent.role, agent.state, agent.tag
                 self.generate_file('a',self.t,self.num_infected,self.num_healthy,self.num_medic)
-                #print "Time: ", t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy
+                #print "Time: ", self.t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy
                 self.t += 1
             else:
                 for agent in self.agent_list:
-                    rand = random.randint(0,8)
-                    agent.x = self.x_movement(rand, agent.x)
-                    agent.y = self.y_movement(rand, agent.y)
+                    agent.x = self.x_movement(agent.x)
+                    agent.y = self.y_movement(agent.y)
                     agent.tag = self.board[agent.x][agent.y]
                     self.natural_recovery()
+                    #print self.t, agent.role, agent.state, agent.tag
                 self.collision_check()
                 self.generate_file('a',self.t,self.num_infected,self.num_healthy,self.num_medic,self.recovered_count,self.infection_count)
-                #print "Time: ", t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy, "# recovered: ", self.recovered_count, "# infections: ", self.infection_count
+                #print "Time: ", self.t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy, "# recovered: ", self.recovered_count, "# infections: ", self.infection_count
                 self.t += 1
 
 
@@ -188,13 +205,18 @@ class Agent():
         self.state = state
         self.infected_t = 0
 
+### SQUAD PARAMETERS ###
+# ["Role",#healthy, #infected]
+squad1 = ["A", 2, 2]
+squad2 = ["B", 3, 1]
+
 ### ENTER PARAMETERS ###
-end_t = 100
+end_t = 50
 num_healthy = 10
 num_infected = 2
 num_medic = 2
 infection_p = [0.3,0.9,0.5]
-recovery_t = [2,7,4]
+recovery_t = [48,120,72]
 #########################
 
-InfectionSim(end_t,num_healthy,num_infected,num_medic,infection_p,recovery_t).run()
+InfectionSim(end_t,num_medic,infection_p,recovery_t,squad1,squad2).run()
