@@ -15,6 +15,8 @@
 # -Code batch runner file
 # -Organize code
 #
+# -Bigger board
+# -Return more data
 # -Arguments from commandline
 # -Simplify y coordinate generation
 # -Come up with position tag system that can handle bigger boards
