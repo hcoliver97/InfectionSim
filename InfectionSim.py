@@ -5,18 +5,15 @@
 -Natural recovery from triangle distribution
 -Base case with civilian and medic
 -Enter parameters at bottom of InfectionSim.py
--Enter squad parameters
+-Enter squad parameters including range
 -Outputs to a csv file with version name
 '''
 
 ###TO_DO###
 # Important:
-# -Squad confining to a section on board
 # -Code batch runner file
 # -Organize code
 #
-# -Bigger board
-# -Return more data
 # -Arguments from commandline
 # -Simplify y coordinate generation
 # -Come up with position tag system that can handle bigger boards
@@ -69,6 +66,7 @@ class InfectionSim(Triangle):
             self.num_healthy += 1
 
     def x_range(self, role, new_x):
+        '''Checks and returns x range within allowed range for squad'''
         for squad in self.squad:
             if role == squad[0]:
                 if new_x < squad[3][0]:
@@ -89,6 +87,7 @@ class InfectionSim(Triangle):
         return new_x
 
     def y_range(self, role, new_y):
+        '''Checks and returns y within y range for squad '''
         for squad in self.squad:
             if role == squad[0]:
                 if new_y < squad[4][0]:
