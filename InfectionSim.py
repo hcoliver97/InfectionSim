@@ -168,13 +168,14 @@ class InfectionSim(Triangle):
                 line(i,0,i,500)
 
     def draw(self):
+        c = 255/self.end_t
         for agent in self.agent_list:
             if agent.role == "Med":
-                fill(0,self.t*40+2.5,0)
+                fill(0,self.t*c,0)
             elif agent.role == "A":
-                fill(self.t*40+2.5,0,0)
+                fill(self.t*c,0,0)
             elif agent.role == "B":
-                fill(0,0,self.t*40+2.5)
+                fill(0,0,self.t*c)
             rect(agent.x*50,agent.y*50,50,50)
 
 
