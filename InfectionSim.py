@@ -191,9 +191,15 @@ class InfectionSim(Triangle):
             if agent.role == "Med":
                 fill(0,self.t*c,0)
             elif agent.role == "A":
-                fill(self.t*c,0,0)
+                if agent.state == True:
+                    fill(self.t*c,0,0)
+                else:
+                    fill(self.t*c,0,self.t*c)
             elif agent.role == "B":
-                fill(0,0,self.t*c)
+                if agent.state == True:
+                    fill(self.t*c,0,0)
+                else:
+                    fill(0,0,self.t*c)
             rect(agent.x*40,agent.y*40,40,40)
 
     def run(self):
@@ -227,7 +233,7 @@ class InfectionSim(Triangle):
                     agent.y = self.y_movement(agent.y,agent.y_range)
                     agent.tag = self.board[agent.x][agent.y]
                     self.natural_recovery()
-                    print self.t, agent.role, agent.state, agent.tag, agent.x, agent.y
+                    #print self.t, agent.role, agent.state, agent.tag, agent.x, agent.y
                 self.collision_check()
                 self.generate_file('a',self.t,self.num_infected,self.num_healthy,self.num_medic,self.recovered_count,self.infection_count)
                 #print "Time: ", self.t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy, "# recovered: ", self.recovered_count, "# infections: ", self.infection_count
@@ -255,14 +261,14 @@ class Agent():
 
 ### SQUAD PARAMETERS ###
 # ["Role",#healthy, #infected]
-squad1 = ["A", 1, 1,[0,9],[0,9]]
-squad2 = ["B", 1, 1,[10,19],[10,19]]
+squad1 = ["A", 8, 2,[0,19],[0,19]]
+squad2 = ["B", 8, 2,[0,19],[0,19]]
 
 ### ENTER PARAMETERS ###
-end_t = 5
-num_medic = 1
+end_t = 10
+num_medic = 2
 infection_p = [0.3,0.9,0.5]
 recovery_t = [48,120,72]
 #########################
-random.seed(123)
+#random.seed(123)
 InfectionSim(end_t,num_medic,infection_p,recovery_t,squad1,squad2).run()
