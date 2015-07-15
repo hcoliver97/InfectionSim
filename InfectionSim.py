@@ -5,6 +5,7 @@
 -Natural recovery from triangle distribution
 -Base case with civilian and medic
 -Enter parameters at bottom of InfectionSim.py
+-Squad range
 -Run in processing to generate visual of random movement
 '''
 
@@ -25,7 +26,7 @@ from Rv import Triangle
 import time
 
 __author__ = "Hayley Oliver"
-__version__ = '1.6.1'
+__version__ = '1.7.1'
 
 class InfectionSim(Triangle):
     ''' Simulation Class'''
@@ -56,51 +57,38 @@ class InfectionSim(Triangle):
         '''Generates instances of class Agent with parameters specified.'''
         for squad in self.squad:
             for i in range(squad[1]):
-                self.agent_list.append(Agent(squad[0],False))
+                self.agent_list.append(Agent(squad[0],False,squad[3],squad[4]))
                 self.num_healthy += 1
             for i in range(squad[2]):
-                self.agent_list.append(Agent(squad[0],True))
+                self.agent_list.append(Agent(squad[0],True,squad[3],squad[4]))
                 self.num_infected += 1
         for i in range(self.num_medic):
-            self.agent_list.append(Agent("Med", False))
+            self.agent_list.append(Agent("Med", False, [0,self.board_size-1],[0,self.board_size-1]))
             self.num_healthy += 1
 
-    def x_range(self, role, new_x):
-        '''Checks and returns x range within allowed range for squad'''
-        for squad in self.squad:
-            if role == squad[0]:
-                if new_x < squad[3][0]:
-                    new_x = squad[3][0]
-                elif new_x > squad[3][1]:
-                    new_x = squad[3][1]
-            else:
-                if new_x < 0: new_x = 0
-                if new_x > self.board_size-1: new_x = self.board_size-1
-            return new_x
+    def x_range(self, new_x, x_range):
+        '''Checks and returns y within y range for squad '''
+        if new_x < x_range[0]:
+            new_x = x_range[0]
+        elif new_x > x_range[1]:
+            new_x = x_range[1]
+        return new_x
 
-    def x_movement(self, role, x):
+    def x_movement(self, x, x_range):
         '''Generates new X coordinate based on a random integer'''
         rand = random.randint(0,8)
         new_x = x + ((rand % 3)-1)
-        if new_x < 0: new_x = 0
-        if new_x > self.board_size-1: new_x = self.board_size-1
-        return new_x
+        return self.x_range(new_x, x_range)
 
-    def y_range(self, role, new_y):
+    def y_range(self, new_y, y_range):
         '''Checks and returns y within y range for squad '''
-        for squad in self.squad:
-            if role == squad[0]:
-                if new_y < squad[4][0]:
-                    new_y = squad[4][0]
-                elif new_y > squad[4][1]:
-                    new_y = squad[4][1]
-            else:
-                if new_y < 0: new_y = 0
-                if new_y > self.board_size-1: new_y = self.board_size-1
-            return new_y
+        if new_y < y_range[0]:
+            new_y = y_range[0]
+        elif new_y > y_range[1]:
+            new_y = y_range[1]
+        return new_y
 
-
-    def y_movement(self,role,y):
+    def y_movement(self,y,y_range):
         '''Generates new Y coordinate based on random integer'''
         rand = random.randint(0,8)
         if rand <= 2 and rand >= 0:
@@ -110,7 +98,7 @@ class InfectionSim(Triangle):
         elif rand <= 8 and rand >= 6:
             new_y = y - 1
 
-        return self.y_range(role,new_y)
+        return self.y_range(new_y,y_range)
 
     def tags(self):
         '''
@@ -222,12 +210,12 @@ class InfectionSim(Triangle):
         for self.t in range(0, self.end_t + 1):
             if self.t == 0:
                 for agent in self.agent_list:
-                    rx = random.randint(0,self.board_size-1)
-                    ry = random.randint(0,self.board_size-1)
+                    rx = random.randint(agent.x_range[0],agent.x_range[1])
+                    ry = random.randint(agent.y_range[0],agent.y_range[1])
                     agent.x = rx
                     agent.y = ry
                     agent.tag = self.board[agent.x][agent.y]
-                    #self.natural_recovery()
+                    self.natural_recovery()
                     #print self.t, agent.role, agent.state, agent.tag, agent.x, agent.y
                 self.generate_file('a',self.t,self.num_infected,self.num_healthy,self.num_medic)
                 #print "Time: ", self.t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy
@@ -235,11 +223,11 @@ class InfectionSim(Triangle):
                 self.t += 1
             else:
                 for agent in self.agent_list:
-                    agent.x = self.x_movement(agent.role,agent.x)
-                    agent.y = self.y_movement(agent.role,agent.y)
+                    agent.x = self.x_movement(agent.x,agent.x_range)
+                    agent.y = self.y_movement(agent.y,agent.y_range)
                     agent.tag = self.board[agent.x][agent.y]
                     self.natural_recovery()
-                    #print self.t, agent.role, agent.state, agent.tag, agent.x, agent.y
+                    print self.t, agent.role, agent.state, agent.tag, agent.x, agent.y
                 self.collision_check()
                 self.generate_file('a',self.t,self.num_infected,self.num_healthy,self.num_medic,self.recovered_count,self.infection_count)
                 #print "Time: ", self.t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy, "# recovered: ", self.recovered_count, "# infections: ", self.infection_count
@@ -249,7 +237,7 @@ class InfectionSim(Triangle):
 
 class Agent():
     '''Creates and instance of an agent with the given parameters'''
-    def __init__(self, role, state):
+    def __init__(self, role, state, x_range,y_range):
         '''
         Each agent has attribute role, x, y, tag, and state.
         Role = medic or civilian
@@ -261,18 +249,20 @@ class Agent():
         self.y = 0
         self.tag = ""
         self.state = state
+        self.x_range = x_range
+        self.y_range = y_range
         self.infected_t = 0
 
 ### SQUAD PARAMETERS ###
 # ["Role",#healthy, #infected]
-squad1 = ["A", 4, 1,[0,9],[0,9]]
-squad2 = ["B", 4, 1,[10,19],[10,19]]
+squad1 = ["A", 1, 1,[0,9],[0,9]]
+squad2 = ["B", 1, 1,[10,19],[10,19]]
 
 ### ENTER PARAMETERS ###
-end_t = 10
+end_t = 5
 num_medic = 1
 infection_p = [0.3,0.9,0.5]
 recovery_t = [48,120,72]
 #########################
-#random.seed(123)
+random.seed(123)
 InfectionSim(end_t,num_medic,infection_p,recovery_t,squad1,squad2).run()
