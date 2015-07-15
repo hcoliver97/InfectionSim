@@ -26,7 +26,7 @@ from Rv import Triangle
 import time
 
 __author__ = "Hayley Oliver"
-__version__ = '1.7.1'
+__version__ = '1.7.2'
 
 class InfectionSim(Triangle):
     ''' Simulation Class'''
@@ -164,6 +164,7 @@ class InfectionSim(Triangle):
             if agent.state == True:
                 if self.t >= agent.infected_t + self.recovery_t:
                     agent.state = False
+                    self.recovery_cord.append([agent.x,agent.y])
                     agent.infected_t = 0
 
     def generate_file(self, mode, *args):
@@ -201,6 +202,18 @@ class InfectionSim(Triangle):
                 else:
                     fill(0,0,self.t*c)
             rect(agent.x*40,agent.y*40,40,40)
+
+    def event_notice(self):
+        for cords in self.infection_cord:
+            x = cords[0]
+            y = cords[1]
+            fill(255,255,0)
+            rect(x*40, y*40,40,40)
+        for cords in self.recovery_cord:
+            x = cords[0]
+            y = cords[1]
+            fill(0,255,255)
+            rect(x*40, y*40,40,40)
 
     def run(self):
         '''
@@ -240,6 +253,8 @@ class InfectionSim(Triangle):
                 self.draw()
                 self.t += 1
 
+            self.event_notice()
+
 
 class Agent():
     '''Creates and instance of an agent with the given parameters'''
@@ -265,8 +280,8 @@ squad1 = ["A", 8, 2,[0,19],[0,19]]
 squad2 = ["B", 8, 2,[0,19],[0,19]]
 
 ### ENTER PARAMETERS ###
-end_t = 10
-num_medic = 2
+end_t = 20
+num_medic = 5
 infection_p = [0.3,0.9,0.5]
 recovery_t = [48,120,72]
 #########################
