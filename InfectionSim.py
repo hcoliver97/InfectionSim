@@ -1,4 +1,4 @@
-''' Simple Infection Simulation
+''' Simple Infection Simulation For Processing
 -Agent based model
 -Checker board style random movement
 -Simple infection probability from distribution
@@ -6,7 +6,7 @@
 -Base case with civilian and medic
 -Enter parameters at bottom of InfectionSim.py
 -Enter squad parameters
--Outputs to a csv file with version name
+-Run in processing to generate visual of random movement
 '''
 
 ###TO_DO###
@@ -22,7 +22,8 @@
 
 import random
 import csv
-from Rv import *
+from Rv import Triangle
+import time
 
 __author__ = "Hayley Oliver"
 __version__ = '1.4'
@@ -40,6 +41,9 @@ class InfectionSim(Triangle):
         # Initialization variables
         self.num_healthy = 0
         self.num_infected = 0
+        self.infected_tag = []
+        self.healthy_tag = []
+        self.medic_tag = []
         self.recovered_count = 0
         self.infection_count = 0
         self.agent_list = []
@@ -101,20 +105,21 @@ class InfectionSim(Triangle):
         Appends position tags of infected, healthy, and medics to respective list.
         Sets number of healthy and infected agents and checks for infection and recovery.
         '''
-        infected_tag = []
-        healthy_tag = []
-        medic_tag = []
+        self.infected_tag =[]
+        self.healthy_tag = []
+        self.medic_tag = []
+
         for agent in self.agent_list:
             if agent.state == True:
-                infected_tag.append(agent.tag)
+                self.infected_tag.append(agent.tag)
             elif agent.state == False:
-                healthy_tag.append(agent.tag)
+                self.healthy_tag.append(agent.tag)
             if agent.role == "Med":
-                medic_tag.append(agent.tag)
-        self.num_healthy = len(healthy_tag)
-        self.num_infected = len(infected_tag)
-        for tag in infected_tag:
-            if tag in healthy_tag:
+                self.medic_tag.append(agent.tag)
+        self.num_healthy = len(self.healthy_tag)
+        self.num_infected = len(self.infected_tag)
+        for tag in self.infected_tag:
+            if tag in self.healthy_tag:
                 for agent in self.agent_list:
                     if agent.tag == tag and agent.state == False:
                         if random.random() <= self.infection_p:
@@ -124,7 +129,7 @@ class InfectionSim(Triangle):
                             self.num_healthy -= 1
                             self.num_infected += 1
 
-            if tag in medic_tag:
+            if tag in self.medic_tag:
                 for agent in self.agent_list:
                     if agent.tag == tag and agent.state == True:
                         agent.state = False
@@ -144,14 +149,35 @@ class InfectionSim(Triangle):
                     agent.state = False
                     agent.infected_t = 0
 
-    def generate_file(self, mode, *args):
+    def generate_file(self, filename, mode, *args):
         '''Generates data file with inputs'''
-        with open('InfectionSim'+__version__+'.csv', mode) as file:
+        with open(filename +'.csv', mode) as file:
             writer = csv.writer(file)
             data = []
             for i in args:
                 data.append(i)
             writer.writerow(data)
+
+    def setup(self):
+        size(500,500)
+        background(0)
+        for i in range(0,500):
+            if i%50 == 0:
+                stroke(255)
+                line(0,i,500,i)
+                line(i,0,i,500)
+
+    def draw(self):
+        for agent in self.agent_list:
+            if agent.role == "Med":
+                fill(0,self.t*40+2.5,0)
+            elif agent.role == "A":
+                fill(self.t*40+2.5,0,0)
+            elif agent.role == "B":
+                fill(0,0,self.t*40+2.5)
+            rect(agent.x*50,agent.y*50,50,50)
+
+
 
     def run(self):
         '''
@@ -160,9 +186,9 @@ class InfectionSim(Triangle):
         At every timestep, generates random movement and checks for collision.
         For every collision, infection occures at infection_p
         '''
+        self.setup()
         self.generate_agents()
         self.tags()
-        self.generate_file("w","Time","NumInfected","NumHealthy","NumMedic","NumRecovered","NumInfections")
         for self.t in range(0, self.end_t + 1):
             if self.t == 0:
                 for agent in self.agent_list:
@@ -172,9 +198,7 @@ class InfectionSim(Triangle):
                     agent.y = ry
                     agent.tag = self.board[agent.x][agent.y]
                     self.natural_recovery()
-                    #print self.t, agent.role, agent.state, agent.tag
-                self.generate_file('a',self.t,self.num_infected,self.num_healthy,self.num_medic)
-                #print "Time: ", self.t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy
+                self.draw()
                 self.t += 1
             else:
                 for agent in self.agent_list:
@@ -182,10 +206,8 @@ class InfectionSim(Triangle):
                     agent.y = self.y_movement(agent.y)
                     agent.tag = self.board[agent.x][agent.y]
                     self.natural_recovery()
-                    #print self.t, agent.role, agent.state, agent.tag
                 self.collision_check()
-                self.generate_file('a',self.t,self.num_infected,self.num_healthy,self.num_medic,self.recovered_count,self.infection_count)
-                #print "Time: ", self.t, "# infected: ", self.num_infected, "# healthy: ", self.num_healthy, "# recovered: ", self.recovered_count, "# infections: ", self.infection_count
+                self.draw()
                 self.t += 1
 
 
@@ -207,16 +229,14 @@ class Agent():
 
 ### SQUAD PARAMETERS ###
 # ["Role",#healthy, #infected]
-squad1 = ["A", 2, 2]
-squad2 = ["B", 3, 1]
+squad1 = ["A", 1, 1]
+squad2 = ["B", 1, 1]
 
 ### ENTER PARAMETERS ###
-end_t = 50
-num_healthy = 10
-num_infected = 2
-num_medic = 2
+end_t = 10
+num_medic = 1
 infection_p = [0.3,0.9,0.5]
 recovery_t = [48,120,72]
 #########################
-
+#random.seed(123)
 InfectionSim(end_t,num_medic,infection_p,recovery_t,squad1,squad2).run()
